@@ -1,4 +1,4 @@
-module Utils.Prime (primeGenErt) where
+module Utils.Prime (primeGenErt, primeFactors) where
 
 -- Sieve of Eratosthenes. Should be suitable for some problems, but certainly not all
 primeGenErt :: [Integer]
@@ -16,3 +16,9 @@ primeGenErt :: [Integer]
 
 primeGenErt = 2:(ertFilter 2 [3..])
     where ertFilter p (nextP:list) = nextP:(ertFilter nextP (filter (\x -> x `mod` p /= 0) list))
+
+-- Prime factorization, generates in ascending order
+primeFactors :: Integer -> [Integer]
+primeFactors 1 = []
+primeFactors num = factor:(primeFactors $ num `quot` factor)
+    where factor = head $ filter (\x -> num `mod` x == 0) primeGenErt
