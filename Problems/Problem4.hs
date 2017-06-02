@@ -1,9 +1,14 @@
 -- Largest palindrome made from the product of 2 3-digit numbers
--- A number n is palindromic if log10(n) is odd and for every i from 0 to log10(n) `div` 2, digitAt i num = digitAt (log10(n)-i) num
 
-import Utils.IntegerOps
-
-main = putStrLn $ show getProblem4Value
+main = print getProblem4Value
 
 getProblem4Value :: Integer
-getProblem4Value = intLogBase 10 9999
+getProblem4Value = findLargestPal 997 999
+
+findLargestPal :: Integer -> Integer -> Integer
+findLargestPal pal i
+    | i < 100 = findLargestPal (pal-1) 999
+    | (palindrome `mod` i /= 0) = findLargestPal pal (i-1)
+    | (palindrome `mod` i == 0) && (palindrome `div` i >= 100) && (palindrome `div` i < 1000) = palindrome
+    | otherwise = findLargestPal (pal-1) 999
+    where palindrome = (read ((show pal) ++ reverse (show pal)))
