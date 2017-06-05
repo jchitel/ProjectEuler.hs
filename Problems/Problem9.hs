@@ -6,17 +6,6 @@
 -- There exists exactly one Pythagorean triplet for which a + b + c = 1000.
 -- Find the product abc.
 
--- (1000 - b - c)^2 + b^2 = c^2
--- (1000 - b - c)(1000 - b - c) + b^2 = c^2
--- 1e6 + b^2 + c^2 - 2000b - 2000c + 2bc + b^2 = c^2
--- 2b^2 - 2000b - 2000c + 2bc + 1e6 = 0
--- 2b^2 + (2c - 2000)b - 2000c + 1e6 = 0
--- a = 2, b = 2c - 2000, c = 1e6 - 2000c
--- b = ((2000 - 2c) + sqrt((2c - 2000)^2 - 8(1e6 - 2000c)))/4 OR ((2000 - 2c) - sqrt((2c - 2000)^2 - 8(1e6 - 2000c)))/4
--- b = ((2000 - 2c) +/- sqrt(4c^2 - 8000c + 4e6 - 8e6 - 16000c))/4
--- b = ((2000 - 2c) +/- sqrt(4c^2 - 24000c - 4e6))/4
--- b = ((2000 - 2c) +/- 2sqrt(c^2 - 6000c - 1e6))/4
-
 main = print getProblem9Value
 
 getProblem9Value :: Integer
