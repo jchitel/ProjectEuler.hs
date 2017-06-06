@@ -1,5 +1,7 @@
 module Utils.Prime (primeGen, primeGenErt, primeGenSun, primeFactors) where
 
+import Debug.Trace
+
 --------------------
 -- Prime Generation
 --------------------
@@ -69,26 +71,68 @@ primeGenErt = 2:(ertFilter 2 [3..])
 -- We first generate our current primes, which are computed from the exclusive range between the previous k and the current k.
 -- Then we prepend that to the next primes (called recursively), where we pass the next values of the parameters.
 -- To compute the current k value and the next parameters, we call processKValues.
+
+-- So effectively, we need 2, followed by the sequence of 2*n+1 for every n not in ks, where ks is every k such that (i+j+2ij) exists for some natural numbers i and j where 1 <= i <= j.
+-- primeGenSun' takes the list of ks and the list of natural numbers and yields 2*n+1 for every n not in ks.
 primeGenSun :: [Integer]
+primeGenSun = 2:(primeGenSun' kValues [1..])
+    where primeGenSun' (k:ks) (n:ns)
+            | (n < k) = (2*n+1):(primeGenSun' (k:ks) ns)
+            | (n == k) = primeGenSun' ks ns
+
+-- kValues yields every possible k (every i+j+2ij for integers i and j where 1 <= i <= j) in order.
+-- To do this it uses a list of lists of ks where each list in the list is every k for a fixed i.
+-- Each element of kValues is the next minimum value of all lists, where there are no duplicates.
+-- To prevent infinite recursion, we use the fact that each list's first value is higher than the previous one's, and place a -1 at the start of each list.
+-- When we are enumerating all of the lists, as soon as we hit one where the first value is a -1, we check the next value.
+-- If that value is lower than the current minimum k in the iteration, we "open" that list and return the new value as the minimum, the next k.
+-- This series will get slower as it goes on, but at an exponential rate, because the minimum k for an i increases exponentially as i increases.
+kValues :: [Integer]
+kValues = kValues' listOfListsOfKs
+    where kValues' i ((k:kStack):kStacks) = 
+
+listOfListsOfKs :: [[Integer]]
+listOfListsOfKs = listOfListsOfKs' 1
+    where listOfListsOfKs' i = (listOfKsForI i):(listOfListsOfKs' (i+1))
+          listOfKsForI i = -1:[2*i+2*i*i,2*i+1+2*i*i+2*i..]
+
+
+
+
 primeGenSun = 2:(primeGenSun' [kProgression 1] 0 (minK 2))
-    where primeGenSun' kStacks prevK nextMinK = (map computeOddPrime [(prevK+1)..(thisK-1)]) ++ (primeGenSun' nextKStacks thisK nextNextMinK)
-            where (nextKStacks, thisK, nextNextMinK) = processKValues kStacks nextMinK
+--    where primeGenSun' kStacks prevK nextMinK = (map computeOddPrime [(prevK+1)..(thisK-1)]) ++ (primeGenSun' nextKStacks thisK nextNextMinK)
+--            where (nextKStacks, thisK, nextNextMinK) = processKValues kStacks nextMinK
+
+primeGenSun' :: [[Integer]] -> Integer -> Integer -> [Integer]
+primeGenSun' kStacks prevK nextMinK = (map computeOddPrime [(prevK+1)..(thisK-1)]) ++ (primeGenSun' nextKStacks thisK nextNextMinK)
+    where (nextKStacks, thisK, nextNextMinK) = trace ("Calling processKValues with "++(show $ length kStacks)++" k-stacks and "++(show nextMinK)++" as the next min-k.") $ processKValues kStacks nextMinK
 
 -- processKValues takes our current k stacks and the min k of the next uncomputed stack and computes the current k, the new stacks, and the min k of the next next uncomputed stack
 -- the current k is the minimum head value of all the stacks.
 -- any stack whose head is the minimum will have that head removed.
 -- if the current k is greater than or equal to the nextMinK value, we need to compute the next stack and add it to the list.
 processKValues :: [[Integer]] -> Integer -> ([[Integer]], Integer, Integer)
-processKValues kStacks nextMinK = processKValues' 1 (-1) kStacks nextMinK
-    where processKValues' i thisK ((k:kStack):kStacks) nextMinK = (newKStack:nextKStacks, thisK, nextNextMinK) -- throw our stack back onto the head of the list along with the computed results
-            where (nextKStacks, thisK, nextNextMinK) = processKValues' (i+1) newMinK kStacks nextMinK -- recurse because there are more stacks to check
-                  newMinK = if (thisK == -1 || k < thisK) then k else thisK -- compute the new min k
-                  newKStack = if (thisK == k) then kStack else (k:kStack) -- if we had the minimum value, then return our stack without that value, otherwise leave it untouched
-          processKValues' i thisK [] nextMinK
-            | (thisK >= nextMinK) = ([newKProgression], nextMinK, newNextMinK) -- if the computed next k value is >= the next min k, the next min k is now the current k and we generate the new k progression for the list
-            | otherwise = ([], thisK, nextMinK) -- otherwise, we proceed with all the values that were passed to us
-            where (_:newKProgression) = kProgression (i+1) -- ignore the head because it is nextMinK, which we are using right now
-                  newNextMinK = minK (i+2) -- compute the min k for the progression after this new one
+processKValues kStacks nextMinK = trace ("Calling processKValues' 1 (-1) kStacks "++(show nextMinK)) $ processKValues' 1 (-1) kStacks nextMinK
+--    where processKValues' i thisK ((k:kStack):kStacks) nextMinK = (newKStack:nextKStacks, thisK, nextNextMinK) -- throw our stack back onto the head of the list along with the computed results
+--            where (nextKStacks, thisK, nextNextMinK) = processKValues' (i+1) newMinK kStacks nextMinK -- recurse because there are more stacks to check
+--                  newMinK = if (thisK == -1 || k < thisK) then k else thisK -- compute the new min k
+--                  newKStack = if (thisK == k) then kStack else (k:kStack) -- if we had the minimum value, then return our stack without that value, otherwise leave it untouched
+--          processKValues' i thisK [] nextMinK
+--            | (thisK >= nextMinK) = ([newKProgression], nextMinK, newNextMinK) -- if the computed next k value is >= the next min k, the next min k is now the current k and we generate the new k progression for the list
+--            | otherwise = ([], thisK, nextMinK) -- otherwise, we proceed with all the values that were passed to us
+--            where (_:newKProgression) = kProgression (i+1) -- ignore the head because it is nextMinK, which we are using right now
+--                  newNextMinK = minK (i+2) -- compute the min k for the progression after this new one
+
+processKValues' :: Integer -> Integer -> [[Integer]] -> Integer -> ([[Integer]], Integer, Integer)
+processKValues' i trackingK ((k:kStack):kStacks) nextMinK = (newKStack:nextKStacks, finalK, nextNextMinK)
+    where (nextKStacks, finalK, nextNextMinK) = trace ("Next k-value for stack i="++(show i)++" is "++(show k)++". New min-k is "++(show newMinK)++".") $ processKValues' (i+1) newMinK kStacks nextMinK
+          newMinK = if (trackingK == -1 || k < trackingK) then (trace ("Our k-value "++(show k)++" is lower than the previous "++(show trackingK)) $ k) else (trace ("Our k-value "++(show k)++" is not lower than the previous "++(show trackingK)) $ trackingK)
+          newKStack = if (finalK == k) then (trace ("Our k-value was equal to the final k-value, removing k from our stack") $ kStack) else (k:kStack)
+processKValues' i thisK [] nextMinK
+    | (thisK >= nextMinK) = trace ("Getting k-stack for new i="++(show (i+1))++". New min-k is "++(show nextMinK)++"New next min-k is "++(show newNextMinK)) $ ([newKProgression], nextMinK, newNextMinK)
+    | otherwise = trace ("No new k-stack yet needed. min-k is "++(show thisK)++". Next min-k is still "++(show nextMinK)) $ ([], thisK, nextMinK)
+    where (_:newKProgression) = kProgression (i+1)
+          newNextMinK = minK (i+2)
 
 -- the k progression for some i, that is, given an i generate all (i+j+2ij) where j is greater than or equal to i
 kProgression :: Integer -> [Integer]
@@ -100,7 +144,7 @@ minK i = (2*i+2*i*i)
 
 -- Given a value n filtered from the list of integers using the sieve, compute a prime
 computeOddPrime :: Integer -> Integer
-computeOddPrime n = 2 * n + 1
+computeOddPrime n = trace ("Emitting prime "++(show $ 2*n+1)++" calculated from non-k value "++(show n)) (2 * n + 1)
 
 --------------------
 -- Other prime APIs

@@ -4,5 +4,6 @@ import Utils.Prime
 
 main = print getProblem10Value
 
-getProblem10Value :: Integer
-getProblem10Value = sum $ takeWhile (<2000000) primeGen
+getProblem10Value :: [Integer]
+getProblem10Value = take 20 primeGen
+--getProblem10Value = sum $ takeWhile (<2000000) primeGen
