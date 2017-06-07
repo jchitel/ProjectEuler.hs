@@ -87,9 +87,44 @@ primeGenSun = 2:(primeGenSun' kValues [1..])
 -- When we are enumerating all of the lists, as soon as we hit one where the first value is a -1, we check the next value.
 -- If that value is lower than the current minimum k in the iteration, we "open" that list and return the new value as the minimum, the next k.
 -- This series will get slower as it goes on, but at an exponential rate, because the minimum k for an i increases exponentially as i increases.
+
+-- So...
+-- The concept here is that we have lists of lists of k values, where each list is every k for a fixed i.
+-- Every list is initialized with a -1 at the front to indicate that it hasn't been "opened" yet.
+-- This means that the actual "first" value of a list might be at the second position, so we need to grab the first two elements from each list.
+-- We also always need to be looking at the next list, because its first value may be less than or equal to the first value of the current list.
+-- If we see that the next list hasn't been opened yet and its first value is greater than the current value, we can guarantee that
+-- we don't need to check any more lists
+
+-- alright, this should do it, we're really close
+-- basically, when we pass a list of stacks into kValues' we process it and return the sorted list. but there are cases where we want to do this and we only care about the first entry.
+-- so what we need to do is revise kValues' to call a new function getNextK, which will take a list of lists of ks and return the next k plus the 
 kValues :: [Integer]
 kValues = kValues' listOfListsOfKs
-    where kValues' i ((k:kStack):kStacks) = 
+    where kValues' lol = nextK:(kValues' nextLol)
+            where (nextK, nextLol) = getNextK lol
+
+getNextK :: [[Integer]] -> (Integer, [[Integer]])
+getNextK ((k00:k01:k0Stack):(k10:k11:k1Stack):kStacks)
+    | (k00 == (-1)) = k01:(kValues' (k0Stack:(k10:k11:k1Stack):kStacks)) -- first list hasn't been opened, return its first item
+    | (k00 /= (-1) && k10 == (-1) && k00 < k11) = k00:(kValues' ((k01:k0Stack):(k10:k11:k1Stack):kStacks)) -- second list hasn't been opened but first is still less, return the first
+    | (k00 /= (-1) && k10 == (-1) && k00 == k11) = k00:(kValues' ((k01:k0Stack):k1Stack:kStacks)) -- second list hasn't been opened and first is equal to second, return it and remove from both
+    | (k00 /= (-1) && k10 == (-1) && k00 > k11) = k11:(kValues' ((k00:k01:k0Stack):k1Stack:kStacks)) -- second list hasn't been opened and first is greater than second, return second and leave first
+    | (k00 /= (-1) && k10 /= (-1) && k00 < nextMinK) = k00:(kValues' ((k01:k0Stack):(k10:k11:k1Stack):kStacks)) -- both lists have been opened and first is equal to absolute min, return the first
+    | (k00 /= (-1) && k10 /= (-1) && k00 == nextMinK) = k00:(kValues' nextKs) -- this is definitely WRONG, we need to somehow access the GRID that was used in the recursive call
+    | otherwise = nextMinK:(kValues' ((k00:k01:k0Stack):nextKs)) -- otherwise return absolute min and leave first and second
+    where (nextMinK:nextKs) = kValues' ((k10:k11:k1Stack):kStacks)
+
+kValues = kValues' listOfListsOfKs
+    where kValues' ((k00:k01:k0Stack):(k10:k11:k1Stack):kStacks)
+           | (k00 == (-1)) = k01:(kValues' (k0Stack:(k10:k11:k1Stack):kStacks)) -- first list hasn't been opened, return its first item
+           | (k00 /= (-1) && k10 == (-1) && k00 < k11) = k00:(kValues' ((k01:k0Stack):(k10:k11:k1Stack):kStacks)) -- second list hasn't been opened but first is still less, return the first
+           | (k00 /= (-1) && k10 == (-1) && k00 == k11) = k00:(kValues' ((k01:k0Stack):k1Stack:kStacks)) -- second list hasn't been opened and first is equal to second, return it and remove from both
+           | (k00 /= (-1) && k10 == (-1) && k00 > k11) = k11:(kValues' ((k00:k01:k0Stack):k1Stack:kStacks)) -- second list hasn't been opened and first is greater than second, return second and leave first
+           | (k00 /= (-1) && k10 /= (-1) && k00 < nextMinK) = k00:(kValues' ((k01:k0Stack):(k10:k11:k1Stack):kStacks)) -- both lists have been opened and first is equal to absolute min, return the first
+           | (k00 /= (-1) && k10 /= (-1) && k00 == nextMinK) = k00:(kValues' nextKs) -- this is definitely WRONG, we need to somehow access the GRID that was used in the recursive call
+           | otherwise = nextMinK:(kValues' ((k00:k01:k0Stack):nextKs)) -- otherwise return absolute min and leave first and second
+           where (nextMinK:nextKs) = kValues' ((k10:k11:k1Stack):kStacks)
 
 listOfListsOfKs :: [[Integer]]
 listOfListsOfKs = listOfListsOfKs' 1
