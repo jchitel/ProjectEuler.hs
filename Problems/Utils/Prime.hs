@@ -111,4 +111,4 @@ listOfListsOfKs = listOfListsOfKs' 1
 primeFactors :: Integer -> [Integer]
 primeFactors 1 = []
 primeFactors num = factor:(primeFactors $ num `quot` factor)
-    where factor = head $ filter (\x -> num `mod` x == 0) primeGenErt
+    where factor = head $ filter (\x -> num `mod` x == 0) primeGenSun
