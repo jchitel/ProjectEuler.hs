@@ -4,5 +4,5 @@ import Utils.Prime
 
 main = putStrLn $ show getProblem3Value
 
-getProblem3Value :: [Integer]
-getProblem3Value = primeFactors 600851475143
+getProblem3Value :: Integer
+getProblem3Value = last $ primeFactors 600851475143
