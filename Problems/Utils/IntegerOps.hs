@@ -1,5 +1,5 @@
 -- Integer operation utilities
-module Utils.IntegerOps (intLog, intLogBase, digitAt, triangle, triangles, factors, collatz) where
+module Utils.IntegerOps (intLog, intLogBase, digitAt, triangle, triangles, properDivisors, factors, collatz) where
 
 
 intLog :: Integral a => a -> a
@@ -16,6 +16,9 @@ triangle num = num * (num + 1) `div` 2
 
 triangles :: Integral a => [a]
 triangles = map triangle [1..]
+
+properDivisors :: Integral a => a -> [a]
+properDivisors num = takeWhile (<num) $ factors num
 
 factors :: Integral a => a -> [a]
 factors num
