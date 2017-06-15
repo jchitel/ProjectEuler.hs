@@ -1,32 +1,32 @@
-import Data.List
+import qualified Data.Map as Map
 
 main = print getProblem18Value
 
 -- the problem is to find the hightest sum of any path through the given grid
 getProblem18Value :: Integer
-getProblem18Value = findHighestSum getRows
+getProblem18Value = fst $ gridLookupMemo (getGridWithIndices getGrid) Map.empty
 
--- given a pyramidal grid of numbers, find the highest sum of any path
-findHighestSum :: [[Integer]] -> Integer
-findHighestSum grid = sum $ map (\(a,_,_) -> a) $ getMaximumPath grid
+-- given a grid, strip off all the left-most values
+stripLeftEdge :: [(Integer, Int, Int)] -> [(Integer, Int, Int)]
+stripLeftEdge grid@((_,_,j0):cs) = filter (\(_,_,j) -> j /= j0) grid -- get the column of the first item (top of the pyramid) and filter out all cells in that column
 
--- given a pyramidal grid of numbers, find the path with the highest sum
-getMaximumPath :: [[Integer]] -> [(Integer, Int, Int)]
-getMaximumPath grid = getMaximumPath' $ sortGridWithIndices $ getGridWithIndices grid -- convert the grid into a list of grid cells, tagged with the index of each cell, and sort that list
-    where getMaximumPath' [] = [] --  base case
-          getMaximumPath' (maxCell:remainingCells) = maxCell:(getMaximumPath' $ gridClosure maxCell remainingCells) -- take the head of the list (max value) and recurse with the closure of the remaining grid with that cell as the pivot
+-- given a grid, strip off all the right-most values
+stripRightEdge :: [(Integer, Int, Int)] -> [(Integer, Int, Int)]
+stripRightEdge grid@((_,_,j):gs) = stripRightEdge' j grid -- get the column of the first item (top of the pyramid), which is the current right-most value of the top row
+    where stripRightEdge' _ [] = []
+          stripRightEdge' j (cell@(_,_,j'):grid) -- get the column of the current item
+           | j' == j = stripRightEdge' (j+1) grid -- if it matches the passed in column, drop it, increment the column, and recurse
+           | otherwise = cell:(stripRightEdge' j grid) -- if not, include it in the result list and recurse without incrementing the column, as we haven't found the right-most value yet
 
--- given a "pivot" cell and the remaining cells left in the grid, find the "closure" of the grid around that cell, which are all remaining cells that are reachable from that pivot
-gridClosure :: (Integer, Int, Int) -> [(Integer, Int, Int)] -> [(Integer, Int, Int)]
-gridClosure _ [] = [] -- base case
-gridClosure pivot@(_,pivotI,pivotJ) (cell@(_,cellI,cellJ):gridWIndices) -- grab the pivot cell and the current cell, and the i and j indices of both
-    | (cellI < pivotI && cellJ >= (pivotJ-pivotI+cellI) && cellJ <= pivotJ) = cell:(gridClosure pivot gridWIndices) -- if the current cell's row is < the pivot's row, its column must be between (pivotj-pivoti+celli) and pivotj
-    | (cellI > pivotI && cellJ >= pivotJ && cellJ <= (pivotJ-pivotI+cellI)) = cell:(gridClosure pivot gridWIndices) -- if the current cell's row is > the pivot's row, its column must be between pivotj and (pivotj-pivoti+celli)
-    | otherwise = gridClosure pivot gridWIndices -- if it doesn't match the above cases, we ignore the cell
-
--- given a list of grid cells with indices, sort it in descending order by cell value
-sortGridWithIndices :: [(Integer, Int, Int)] -> [(Integer, Int, Int)]
-sortGridWithIndices grid = reverse $ sortOn (\(a,_,_) -> a) grid
+-- given a grid and a map for memoization, compute the maximum sum of any path from the top to the bottom of the grid
+gridLookupMemo :: [(Integer, Int, Int)] -> (Map.Map (Int,Int) Integer) -> (Integer, (Map.Map (Int,Int) Integer))
+gridLookupMemo ((val,i,j):[]) map = (val, Map.insert (i,j) val map) -- we've shaved off the whole grid, so just save the value of this grid location
+gridLookupMemo grid@((val,i,j):gs) map = case (Map.lookup (i,j) map) of (Just sum) -> (sum, map) -- map lookup, if there is a result, return it with the existing map
+                                                                        Nothing -> (sum', map') -- otherwise compute the value and the new map
+    where (sumRight, mapRight) = gridLookupMemo (stripLeftEdge grid) map -- compute the right-side max
+          (sumLeft, mapLeft) = gridLookupMemo (stripRightEdge grid) mapRight -- compute the left-side max (pass the map from the right side result)
+          sum' = val + (max sumLeft sumRight) -- the sum is the max of the two sides
+          map' = Map.insert (i,j) sum' mapLeft -- add the new computed value to the map (pass the map from the left side result)
 
 -- given a pyramidal grid of numbers, convert it into a flat list of tuples with the structure of (value, row, column)
 getGridWithIndices :: [[Integer]] -> [(Integer, Int, Int)]
@@ -37,8 +37,8 @@ getGridWithIndices grid = getGridWithIndices' 0 grid
           getGridWithIndices'' j i (cell:remRow) = (cell,i,j):(getGridWithIndices'' (j+1) i remRow)
 
 -- Problem input data
-getRows :: [[Integer]]
-getRows = [
+getGrid :: [[Integer]]
+getGrid = [
     [75],
     [95, 64],
     [17, 47, 82],
