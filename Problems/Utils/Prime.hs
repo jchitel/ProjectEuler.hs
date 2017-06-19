@@ -1,6 +1,5 @@
-module Utils.Prime (primeGen, primeGenErt, primeGenSun, primeFactors) where
+module Utils.Prime (primeGen, primeGenErt, primeGenSun, primeFactors, isPrime) where
 
-import Debug.Trace
 
 --------------------
 -- Prime Generation
@@ -112,3 +111,8 @@ primeFactors :: Integer -> [Integer]
 primeFactors 1 = []
 primeFactors num = factor:(primeFactors $ num `quot` factor)
     where factor = head $ filter (\x -> num `mod` x == 0) primeGenSun
+
+-- primality test, this can almost definitely be improved
+isPrime :: Integer -> Bool
+isPrime num = num > 1 && not (hasFactors num)
+    where hasFactors num = any (\x -> num `mod` x == 0) [2..(toInteger $ floor $ sqrt $ fromIntegral num)]
