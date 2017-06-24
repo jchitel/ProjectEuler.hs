@@ -1,3 +1,10 @@
+*
+!/**/
+!*.*
+# The above three lines ignore all files without an extension.
+# The first ignores all files.
+# The next then unignores directories.
+# The last unignores all files with an extension.
 dist
 dist-*
 cabal-dev
