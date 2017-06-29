@@ -7,7 +7,7 @@ module Utils.Prime (primeGen, primeGenErt, primeGenSun, primeFactors, isPrime) w
 -- This is a hard problem to solve, so there happen to be many solutions for it, and the faster ones are harder to implement than the slower ones, so we are implementing them one by one.
 -- The primeGen function always points to the current fastest algorithm.
 
-primeGen :: [Integer]
+primeGen :: (Integral a) => [a]
 primeGen = primeGenSun
 
 -------------------------------------------------
@@ -26,7 +26,7 @@ primeGen = primeGenSun
 
 -- ertFilter is a function that takes a p (the previously computed prime) and a list of numbers (all numbers greater than p that are not divisible by primes before p).
 -- the first number in the list is always the next prime, so we pluck that off and return it, then we recurse with our new prime as p and the rest of the numbers filtered for divisibles of p.
-primeGenErt :: [Integer]
+primeGenErt :: (Integral a) => [a]
 primeGenErt = 2:(ertFilter 2 [3..])
     where ertFilter p (nextP:list) = nextP:(ertFilter nextP (filter (\x -> x `mod` p /= 0) list))
 
@@ -63,7 +63,7 @@ primeGenErt = 2:(ertFilter 2 [3..])
 -- So we pluck a k and an n. If n is less than k, we 2n+1 it and recurse with the same k's list and the remaining n's
 -- If n is equal to k, we recurse with the remaining k's and n's, ignoring that n.
 -- To generate the k-values, we call kValues.
-primeGenSun :: [Integer]
+primeGenSun :: (Integral a) => [a]
 primeGenSun = 2:(primeGenSun' kValues [1..])
     where primeGenSun' (k:ks) (n:ns)
             | (n < k) = (2*n+1):(primeGenSun' (k:ks) ns)
@@ -73,7 +73,7 @@ primeGenSun = 2:(primeGenSun' kValues [1..])
 -- To do this it uses a list of lists of ks where each list in the list is every k for a fixed i.
 -- Each element of kValues is the next minimum value of all lists, where there should be no duplicates.
 -- Each call to getNextK returns the next k-value and the next list of lists of k's. So we yield the next k and recurse with the next list.
-kValues :: [Integer]
+kValues :: (Integral a) => [a]
 kValues = kValues' listOfListsOfKs
     where kValues' lol = nextK:(kValues' nextLol)
             where (nextK, nextLol) = getNextK lol
@@ -84,7 +84,7 @@ kValues = kValues' listOfListsOfKs
 -- As soon as that first value is a -1, we know that we don't need to look at the next list because each list's first value will always be greater than the previous list's first value.
 -- If we are looking at the first two lists and both have been opened, we need to look at the next list to see if it is closed, so we recurse without the first list to get the min value of the remaining lists.
 -- What this effectively does is get the minimum value of every opened list, making sure to open the first closed list if it now has values that are smaller than all the preceding lists.
-getNextK :: [[Integer]] -> (Integer, [[Integer]])
+getNextK :: (Integral a) => [[a]] -> (a, [[a]])
 getNextK ((k00:k01:k0Stack):(k10:k11:k1Stack):kStacks)
     | (k00 == (-1))               = (k01, k0Stack:(k10:k11:k1Stack):kStacks)        -- first list hasn't been opened, return its first item
     | (k10 == (-1) && k00 < k11)  = (k00, (k01:k0Stack):(k10:k11:k1Stack):kStacks)  -- second list hasn't been opened but first is still less, return the first
@@ -97,7 +97,7 @@ getNextK ((k00:k01:k0Stack):(k10:k11:k1Stack):kStacks)
 
 -- This generates all k-values, literally all of them. It uses the formula i+j+2ij and returns a list of lists where each list has a fixed i value,
 -- and contains the k's for every possible value of j, in ascending order.
-listOfListsOfKs :: [[Integer]]
+listOfListsOfKs :: (Integral a) => [[a]]
 listOfListsOfKs = listOfListsOfKs' 1
     where listOfListsOfKs' i = (listOfKsForI i):(listOfListsOfKs' (i+1))
           listOfKsForI i = -1:[2*i+2*i*i,2*i+1+2*i*i+2*i..]
@@ -107,12 +107,12 @@ listOfListsOfKs = listOfListsOfKs' 1
 --------------------
 
 -- Prime factorization, generates in ascending order
-primeFactors :: Integer -> [Integer]
+primeFactors :: (Integral a) => a -> [a]
 primeFactors 1 = []
 primeFactors num = factor:(primeFactors $ num `quot` factor)
     where factor = head $ filter (\x -> num `mod` x == 0) primeGenSun
 
 -- primality test, this can almost definitely be improved
-isPrime :: Integer -> Bool
+isPrime :: (Integral a) => a -> Bool
 isPrime num = num > 1 && not (hasFactors num)
-    where hasFactors num = any (\x -> num `mod` x == 0) [2..(toInteger $ floor $ sqrt $ fromIntegral num)]
+    where hasFactors num = any (\x -> num `mod` x == 0) [2..(floor $ sqrt $ fromIntegral num)]
