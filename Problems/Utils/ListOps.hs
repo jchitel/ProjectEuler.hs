@@ -1,5 +1,5 @@
-module Utils.ListOps (takeUntil, dropUntil, filterMap) where
-import Data.List (foldl')
+module Utils.ListOps (takeUntil, dropUntil, filterMap, maximumUsing) where
+import Data.List (foldl', foldl1')
 
 -- takes all values of a list until (non-inclusive) a value returns true
 -- so the result is the list where the last item is the last item in the list that returns false for the function
@@ -20,3 +20,7 @@ dropUntil fn (i:is)
 -- performs both a map and a filter using a function that returns maybes
 filterMap :: (a -> Maybe b) -> [a] -> [b]
 filterMap func list = map (\(Just x) -> x) $ filter (\x -> case x of { Just _ -> True; Nothing -> False }) $ map func list
+
+-- computes the maximum of a list using a function that computes some ordered value using each value in the list
+maximumUsing :: (Ord b) => (a -> b) -> [a] -> a
+maximumUsing f list = fst $ foldl1' (\(m, fm) (i, fi) -> if (fm > fi) then (m, fm) else (i, fi)) $ map (\x -> (x, f x)) list
