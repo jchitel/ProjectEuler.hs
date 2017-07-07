@@ -1,4 +1,4 @@
-module Utils.Prime (primeGen, primeGenErt, primeGenSun, primeFactors, isPrime) where
+module Utils.Prime (primeGen, primeGenErt, primeGenSun, primeFactors, isPrime, primes) where
 
 
 --------------------
@@ -116,3 +116,7 @@ primeFactors num = factor:(primeFactors $ num `quot` factor)
 isPrime :: (Integral a) => a -> Bool
 isPrime num = num > 1 && not (hasFactors num)
     where hasFactors num = any (\x -> num `mod` x == 0) [2..(floor $ sqrt $ fromIntegral num)]
+
+-- naive prime generation, which ironically enough is faster than either sieve
+primes :: (Integral a) => [a]
+primes = filter isPrime [2..]
