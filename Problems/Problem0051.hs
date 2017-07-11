@@ -1,47 +1,43 @@
-{-
-By replacing the 1st digit of the 2-digit number *3, it turns out that six of the nine possible values: 13, 23, 43, 53, 73, and 83, are all prime.
+import Utils.Prime (isPrime)
+import Data.List (foldr)
 
-By replacing the 3rd and 4th digits of 56**3 with the same digit, this 5-digit number is the first example having seven primes among the ten generated numbers, yielding the family: 56003, 56113, 56333, 56443, 56663, 56773, and 56993. Consequently 56003, being the first member of this family, is the smallest prime with this property.
-
-Find the smallest prime which, by replacing part of the number (not necessarily adjacent digits) with the same digit, is part of an eight prime value family.
-----
-Ugh.
-So we can identify digits to replace using a bit mask number, e.g. 1 will replace the last digit, 2 will replace the second-last digit, 3 will replace the last 2 digits, etc.
-The max mask for a number of n digits is 2^n-1, e.g.
-n=1: 2^1-1 = 1
-n=2: 2^2-1 = 3
-n=3: 2^3-1 = 7
-n=4: 2^4-1 = 15
-
-We need to convert a bit mask number to a bit mask array of bools. We can do this by alternating modding the number by 2 and dividing by 2, generating True when the mod is 1, and False when it is 0.
-Ex: 18
-18 % 2 = 0
-9 % 2 = 1
-4 % 2 = 0
-2 % 2 = 0
-1 % 2 = 1
-This will generate a sequence from right to left. We can then zip this list of booleans with our number as a string. If we encounter a True, we replace the digit, otherwise we leave it the same.
-
-So for each prime p (with string sp and digits dp), we iterate bitmasks b from 1 to 2^dp-1.
-Then we convert b to a bit mask list bl.
-Then we iterate replacements r from 0-9.
-For each r, we zip bl over sp and then convert the result back to a number rp.
-If rp has fewer than dp digits (i.e. we replaced the most significant digit with a 0), we ignore it.
-We then count the resulting rps that are prime as crp.
-If crp is higher than the previous max crp, replace the max values with these new ones.
-Continue until max crp is 8.
-
-So, just a prediction, this is likely to be very slow.
-For each prime, we iterate from 1 to 2^dp-1, which is likely to be 63, hopefully not up to 127.
-So if we say 63, we then multiply that by 10, so we are doing on average 630 operations on each prime.
-If we start with 56003, we skip a lot of crap, so that will be nice.
-Also, because we're dealing with digit replacements, we are going to end up with duplicate operations, so it may be valuable to memoize.
-Meanwhile, I will try to come up with an alternative solution.
--}
 main = print problem51Value
 
-problem51Value :: Integer
-problem51Value = 
+problem51Value :: Int
+problem51Value = find8PrimeValueFamily primes (bitmasks $ head primes) [0..9] 0
 
-getBitMask :: Int -> [Bool]
-getBitMask n = (n `mod` 2 == 1)
+-- start with 56003 because that's the number that is given in the problem definition as the first 7-prime family,
+-- so the first 8-prime family must necessarily be higher
+primes :: [Int]
+primes = filter isPrime [56003..]
+
+intToDigit :: Int -> Char
+intToDigit = head . show
+
+-- all the possible bitmasks of a number of 'dn' digits are 1 to (2^dn-1)
+bitmasks :: Int -> [Int]
+bitmasks n = let dn = (length $ show n) in [1..(2^dn-1)]
+
+-- Given a list of primes, a list of bitmasks for that prime, a list of numbers to use for replacements in the prime, and a count of primes for the current prime-bitmask combination,
+-- find the prime of the first prime-bitmask combination to produce 8 primes when the digits of the prime are replaced using the bitmask.
+find8PrimeValueFamily :: [Int] -> [Int] -> [Int] -> Int -> Int
+find8PrimeValueFamily (p:p1:ps) []     _  _  = find8PrimeValueFamily (p1:ps) (bitmasks p1) [0..9] 0 -- once we're out of bitmasks, move to the next prime
+find8PrimeValueFamily ps        (b:bs) [] _  = find8PrimeValueFamily ps      bs            [0..9] 0 -- once we're out of replacement digits, move to the next bitmask
+find8PrimeValueFamily (p:ps) (b:bs) (r:rs) c
+    | drp < dp                 = find8PrimeValueFamily (p:ps) (b:bs) rs c     -- the result of the replacements had too few digits, skip it
+    | (c == 7) && (isPrime rp) = getMinimumOfFamily sp b                      -- we already had 7 primes in this family and this one is prime, so we've found 8, get the minimum of the family as the SOLUTION
+    | isPrime rp               = find8PrimeValueFamily (p:ps) (b:bs) rs (c+1) -- the number is prime but we had less than 7 already, just increment the counter
+    | otherwise                = find8PrimeValueFamily (p:ps) (b:bs) rs c     -- otherwise, the number is not prime and we can't count it
+    where sp = show p                                    -- sp = the prime as a string
+          dp = length sp                                 -- dp = the number of digits in p
+          rp = read $ replaceBitmask sp b (intToDigit r) -- rp = the replaced number
+          drp = length $ show rp                         -- drp = the number of digits in rp (we need to convert to Int and back to String to remove 0's at the start)
+
+-- using 'b' as a bitmask, replace each digit in 's' corresponding to a bit in 'b' with the character 'r'
+-- bits can be extracted from the bitmask using iterative division by 2, which generates a sequence from LSB to MSB, so we need to use foldr on the string
+replaceBitmask :: String -> Int -> Char -> String
+replaceBitmask s b r = fst $ foldr (\c (rs, b') -> let (q, rm) = (b' `quotRem` 2) in if (rm == 0) then (c:rs, q) else (r:rs, q)) ([], b) s
+
+-- once we have a family (prime-bitmask combination), this gets the smallest member of the family
+getMinimumOfFamily :: String -> Int -> Int
+getMinimumOfFamily s b = minimum $ filter isPrime $ map read $ filter (\x -> (length x) == (length s)) $ map (replaceBitmask s b) $ map intToDigit [0..9]
