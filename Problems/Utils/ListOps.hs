@@ -1,4 +1,4 @@
-module Utils.ListOps (takeUntil, dropUntil, filterMap, maximumUsing) where
+module Utils.ListOps (takeUntil, dropUntil, filterMap, maximumUsing, minimumUsing) where
 import Data.List (foldl', foldl1')
 
 -- takes all values of a list until (non-inclusive) a value returns true
@@ -24,3 +24,6 @@ filterMap func list = map (\(Just x) -> x) $ filter (\x -> case x of { Just _ ->
 -- computes the maximum of a list using a function that computes some ordered value using each value in the list
 maximumUsing :: (Ord b) => (a -> b) -> [a] -> a
 maximumUsing f list = fst $ foldl1' (\(m, fm) (i, fi) -> if (fm > fi) then (m, fm) else (i, fi)) $ map (\x -> (x, f x)) list
+
+minimumUsing :: (Ord b) => (a -> b) -> [a] -> a
+minimumUsing f list = fst $ foldl1' (\(m, fm) (i, fi) -> if (fm < fi) then (m, fm) else (i, fi)) $ map (\x -> (x, f x)) list

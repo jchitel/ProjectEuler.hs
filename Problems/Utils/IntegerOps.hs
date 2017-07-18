@@ -1,5 +1,6 @@
 -- Integer operation utilities
-module Utils.IntegerOps (intLog, intLogBase, digitAt, triangle, triangles, properDivisors, factors, collatz) where
+module Utils.IntegerOps (intLog, intLogBase, digitAt, triangle, triangles, properDivisors, factors, collatz, divide) where
+import Data.Function (on)
 
 
 intLog :: Integral a => a -> a
@@ -33,3 +34,7 @@ collatz :: Integral a => a -> [a]
 collatz 1 = []
 collatz num = num:(collatz num')
     where num' = if (even num) then (num `div` 2) else (3 * num + 1)
+
+-- because nothing should be this simple
+divide :: (Integral a, Fractional b) => a -> a -> b
+divide = (/) `on` fromIntegral
