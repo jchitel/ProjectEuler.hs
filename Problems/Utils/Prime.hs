@@ -1,4 +1,4 @@
-module Utils.Prime (primeGen, primeGenErt, primeGenSun, primeFactors, isPrime, primes) where
+module Utils.Prime (primeGen, primeGenErt, primeGenSun, primeFactors, isPrime, primes, primeFactors') where
 
 
 --------------------
@@ -120,3 +120,9 @@ isPrime num = num > 1 && not (hasFactors num)
 -- naive prime generation, which ironically enough is faster than either sieve
 primes :: (Integral a) => [a]
 primes = filter isPrime [2..]
+
+-- Prime factorization, generates in ascending order (using faster prime generation)
+primeFactors' :: (Integral a) => a -> [a]
+primeFactors' 1 = []
+primeFactors' num = factor:(primeFactors $ num `quot` factor)
+    where factor = head $ filter (\x -> num `mod` x == 0) primes
